@@ -10,9 +10,9 @@ cookies = {'eai-sess': ''}
 mail_url = "https://pro-ivan.com/api/e-mail/"
 
 
-def mail(mailto, surplus):
+def mail(mailto, surplus, time):
     mail_data = {'mailto': mailto, 'subject': 'BUPT电费低警告',
-                 'body': f'您宿舍的电费仅剩{surplus}元，为了防止断电给您造成损失，请及时充值！'}
+                 'body': f'截至{time}您宿舍的电费仅剩{surplus}元，已小于15元。为了防止断电给您造成损失，请及时充值！'}
     mail_response = requests.post(mail_url, data=mail_data)
     print(mail_response.text)
 
@@ -23,8 +23,9 @@ def monitor(drom_Number, mailto):
     # print(post_data)
     data = json.loads(response.text)
     surplus = float(data["d"]["data"]["surplus"])
-    if surplus <= 10:
-        mail(mailto, surplus)
+    time = float(data["d"]["data"]["time"])
+    if surplus <= 15:
+        mail(mailto, surplus, time)
     print(f"{drom_Number}: OK!")
     time.sleep(1.2)
 
