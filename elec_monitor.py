@@ -23,7 +23,7 @@ def monitor(drom_Number, mailto):
     # print(post_data)
     data = json.loads(response.text)
     surplus = float(data["d"]["data"]["surplus"])
-    time = float(data["d"]["data"]["time"])
+    time = str(data["d"]["data"]["time"])
     if surplus <= 15:
         mail(mailto, surplus, time)
     print(f"{drom_Number}: OK!")
