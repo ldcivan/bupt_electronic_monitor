@@ -71,7 +71,8 @@ def get_id():
     data = json.loads(response.text)
 
     surplus = data["d"]["data"]["surplus"]
-    print(f"您选择的宿舍电费余额为：{surplus}")
+    time = data["d"]["data"]["time"]
+    print(f"截至{time}您选择的宿舍电费余额为：{surplus}")
 
 
 get_id()
