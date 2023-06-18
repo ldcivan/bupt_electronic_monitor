@@ -6,7 +6,7 @@ import traceback
 # import mysql.connector
 
 base_url = "https://app.bupt.edu.cn/buptdf/wap/default/search"
-cookies = {'eai-sess': '80gp61j42746jk0cv9oulhrm04'}
+cookies = {'eai-sess': ''}
 mail_url = "https://pro-ivan.com/api/e-mail/"
 
 
@@ -26,6 +26,7 @@ def monitor(drom_Number, mailto):
     if surplus <= 10:
         mail(mailto, surplus)
     print(f"{drom_Number}: OK!")
+    time.sleep(1.2)
 
 
 def read():
