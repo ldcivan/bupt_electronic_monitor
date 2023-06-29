@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>宿舍电费与编号查询</title>
+	<style>
+		label {
+			display: block;
+			margin-top: 10px;
+		}
+		form {
+		    text-align: center;
+		}
+		button {
+		    margin: 10px;
+		    padding: 5px 10px;
+		}
+		p {
+		    margin: 10px;
+		}
+	</style>
+</head>
+<body>
+	<form>
+	    <h1>宿舍电费查询</h1>
+		<label>您所在的校区：
+			<select id="part">
+			    <option value="0">请选择</option>
+				<option value="1">西土城（不支持）</option>
+				<option value="2">沙河</option>
+			</select>
+		</label>
+		<label>请选择宿舍楼：
+			<select id="partment">
+			    <option value="0">请选择</option>
+			</select>
+		</label>
+		<label>请选择楼层：
+			<select id="floor">
+			    <option value="0">请选择</option>
+			</select>
+		</label>
+		<label>请选择宿舍：
+			<select id="drom">
+			    <option value="0">请选择</option>
+			</select>
+		</label>
+		<button type="button" onclick="query()">查询</button>
+	    <button type="button" onclick="window.location.replace('../')">返回</button>
+	    <p id="result"></p>
+	</form>
+	
+	<script>
+	var part = document.getElementById("part").value;
+    var partment = document.getElementById("partment").value;
+    var floor = document.getElementById("floor").value;
+    var drom = document.getElementById("drom").value;
+    var part_select = document.getElementById("part").options[document.getElementById("part").selectedIndex].text;
+    var partment_select = document.getElementById("partment").options[document.getElementById("partment").selectedIndex].text;
+    var floor_select = document.getElementById("floor").options[document.getElementById("floor").selectedIndex].text;
+    var drom_select = document.getElementById("drom").options[document.getElementById("drom").selectedIndex].text;
+	function update(){
+	    part = document.getElementById("part").value;
+        partment = document.getElementById("partment").value;
+        floor = document.getElementById("floor").value;
+        drom = document.getElementById("drom").value;
+        part_select = document.getElementById("part").options[document.getElementById("part").selectedIndex].text;
+        partment_select = document.getElementById("partment").options[document.getElementById("partment").selectedIndex].text;
+        floor_select = document.getElementById("floor").options[document.getElementById("floor").selectedIndex].text;
+        drom_select = document.getElementById("drom").options[document.getElementById("drom").selectedIndex].text;
+	}
+        
+	    function query() {
+            update()
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "drom_num_data.json", false);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.setRequestHeader("Cache-Control", "max-age=43200"); // 缓存有效时间为 43200 秒
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var elec_data = JSON.parse(xhr.responseText)
+                    var drom_data = elec_data[part_select][1][partment_select][1][floor_select][1][drom_select]
+                    //var content = `宿舍编号：${drom_data.drom_Number}<br>电费余额：${drom_data.surplus} 元<br>电费记录时间：${drom_data.surplus_time}`
+                    var content = `宿舍编号：${drom_data.drom_Num}<br>电费余额：${drom_data.surplus} 元<br>电费记录时间：${drom_data.time}`
+                    document.getElementById("result").innerHTML = content;
+                }
+            };
+            xhr.send("action=query&part=" + part + "&partment=" + partment + "&floor=" + floor + "&drom=" + drom);
+        }
+        
+        function updatePartment() {
+            update()
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "drom_num_data.json", false);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.setRequestHeader("Cache-Control", "max-age=43200"); // 缓存有效时间为 43200 秒
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var elec_data = JSON.parse(xhr.responseText)
+                    var content = '<option value="0">请选择</option>'
+                    for (var key in elec_data[part_select][1]) {
+                        content += `<option value='${elec_data[part_select][1][key][0]}'>${key}</option>`
+                    }
+                    document.getElementById("partment").innerHTML = content;
+                }
+            };
+            xhr.send("part=" + part);
+        }
+        
+        function updateFloor() {
+            update()
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "drom_num_data.json", false);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.setRequestHeader("Cache-Control", "max-age=43200"); // 缓存有效时间为 43200 秒
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var elec_data = JSON.parse(xhr.responseText)
+                    var content = '<option value="0">请选择</option>'
+                    for (var key in elec_data[part_select][1][partment_select][1]) {
+                        content += `<option value='${elec_data[part_select][1][partment_select][1][key][0]}'>${key}</option>`
+                    }
+                    document.getElementById("floor").innerHTML = content;
+                }
+            };
+            xhr.send("action=query&part=" + part + "&partment=" + partment);
+        }
+        
+        function updateDrom() {
+            update()
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "drom_num_data.json", false);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.setRequestHeader("Cache-Control", "max-age=43200"); // 缓存有效时间为 43200 秒
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var elec_data = JSON.parse(xhr.responseText)
+                    var content = '<option value="0">请选择</option>'
+                    for (var key in elec_data[part_select][1][partment_select][1][floor_select][1]) {
+                        content += `<option value='${elec_data[part_select][1][partment_select][1][floor_select][1][key][0]}'>${key}</option>`
+                    }
+                    document.getElementById("drom").innerHTML = content;
+                }
+            };
+            xhr.send("action=query&part=" + part + "&partment=" + partment + "&floor=" + floor);
+        }
+        
+        document.getElementById("part").addEventListener("change", updatePartment);
+		document.getElementById("partment").addEventListener("change", updateFloor);
+		document.getElementById("floor").addEventListener("change", updateDrom);
+	</script>
+</body>
+</html>
