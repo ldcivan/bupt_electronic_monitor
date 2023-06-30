@@ -53,7 +53,17 @@ def read_sql():
 
     # 遍历查询结果，打印出dromNumber和mailto的值
     for (dromNumber, mailto) in cursor:
-        monitor(dromNumber, mailto)
+        retry = 0
+        while True or retry < 5:
+            try:
+                monitor(dromNumber, mailto)
+                break
+            except:
+                sqlerr_data = {'mailto': '2531667489@qq.com', 'subject': '电费监视系统异常',
+                            'body': f'读取-监视部分出现错误：<pre>{traceback.format_exc()}</pre>'}
+                sqlerr_response = requests.post(mail_url, data=sqlerr_data)
+                print(sqlerr_response.text)
+                retry = retry +1
 
     # 关闭数据库连接
     cursor.close()
