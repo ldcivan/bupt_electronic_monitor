@@ -6,5 +6,8 @@ elec_id_get用来获取宿舍id号。将id与要发送的邮箱以`[{"dromNumber
 
 缺少依赖请自行安装。不需要mysql储存可以注释掉相关内容。
 
+## 备用方式（Proxy）
+使用代理，代理通道及方式来自[ProxyPool](https://github.com/jhao104/proxy_pool)的demo，请不要滥用
+
 ## Demo
 懒得搭建monitor的同学，您可以登录 https://pro-ivan.com/api/elec_monitor/index.php 获取说明并使用监控功能。
