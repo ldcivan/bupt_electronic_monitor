@@ -1,10 +1,13 @@
 import requests
 import json
+import datetime
 import time
+import traceback
+import mysql.connector
 
-YOUR_COOKIE = '1nqv0128sccu5pktv4gecpaj52'  # TODO: 在此处填写你登录https://app.bupt.edu.cn/后的cookie中的eai-sess的值
-if YOUR_COOKIE == '':
-    YOUR_COOKIE = input('未填入cookie，请在此填写您cookie的eai-sess的值：');
+base_url = "https://app.bupt.edu.cn/buptdf/wap/default/search"
+cookies = {'eai-sess': '80gp61j42746jk0cv9oulhrm04'}
+mail_url = "https://pro-ivan.com/api/e-mail/"
 
 
 def get_proxy():
@@ -17,103 +20,119 @@ def get_proxy():
             print(proxy, proxy.get("https"), '等待支持https的ip')
             time.sleep(10)
     return proxy
+    
+
+def mail(mailto, drom_Number, surplus, surplus_time):
+    mail_data = {'mailto': mailto, 'subject': 'BUPT电费低警告',
+                 'body': f'截至{surplus_time}您宿舍(编号: {drom_Number})的电费仅剩{surplus}元，已小于15元。为了防止断电给您造成损失，请及时充值！'}
+    mail_response = requests.post(mail_url, data=mail_data)
+    print(mail_response.text)
 
 
-def choice_content(content, i):
-    while True:
-        try:
-            choice = int(input(content))
-        except:
-            choice = -1
-        if choice >= 1 and choice <= i + 1:
-            return choice
-            break
-        else:
-            print("输入的序号不符合要求，请重新输入。")
-
-
-def get_id():
-    base_url = "https://app.bupt.edu.cn/buptdf/wap/default/"
-    part_url = base_url + 'part'
-    floor_url = base_url + 'floor'
-    drom_url = base_url + 'drom'
-    search_url = base_url + 'search'
-    cookies = {'eai-sess': YOUR_COOKIE}
-    proxy = get_proxy().get("proxy")
-
-    post_data = {"areaid": choice_content("你所在的校区 1.西土城 2.沙河 ：", 1)}
+def monitor(drom_Number, mailto, proxy):
+    post_data = {'dromNumber': drom_Number}
     retry_count = 5
     while retry_count > 0:
         try:
-            response = requests.post(part_url, data=post_data, cookies=cookies, proxies={"https": "http://{}".format(proxy)})
-            print(response.text, "http://{}".format(proxy))
+            print("http://{}".format(proxy), base_url, post_data, cookies)
+            response = requests.post(base_url, data=post_data, cookies=cookies, proxies={"https": "http://{}".format(proxy)})
+            print(response.text)
             data = json.loads(response.text)
             break
         except:
             retry_count -= 1
             time.sleep(2)
-
-    print("请选择宿舍楼：")
-    for i, item in enumerate(data["d"]["data"]):
-        print(f"{i + 1}. {item['partmentName']}")
-
-    choice = choice_content("请输入序号：", i)
-    partment_id = data["d"]["data"][choice - 1]["partmentId"]
-    print(f"您选择的宿舍楼ID为：{partment_id}")
-
-    post_data['partmentId'] = partment_id
-    
-    retry_count = 5
-    while retry_count > 0:
+    # print(post_data)
+    data = json.loads(response.text)
+    msg = data["m"]
+    if msg == "操作成功":
         try:
-            response = requests.post(floor_url, data=post_data, cookies=cookies, proxies={"https": "http://{}".format(proxy)})
-            # print(response.text)
-            data = json.loads(response.text)
-            break
+            surplus_time = str(data["d"]["data"]["time"])
+            surplus = float(data["d"]["data"]["surplus"])
         except:
-            retry_count -= 1
+            mail(mailto, drom_Number, 'Null', 'Null')
+            return True
+        if surplus <= 15:
+            mail(mailto, drom_Number, surplus, surplus_time)
+        print(f"{drom_Number}: OK!")
+        time.sleep(1.2)
+        return True
+    else:
+        return False
 
-    print("请选择楼层：")
-    for i, item in enumerate(data["d"]["data"]):
-        print(f"{i + 1}. {item['floorName']}")
 
-    choice = choice_content("请输入序号：", i)
-    floor_id = data["d"]["data"][choice - 1]["floorId"]
-    print(f"您选择的楼层ID为：{floor_id}")
+def read():
+    # 读取JSON文件
+    with open('data.json', 'r') as f:
+        data = json.load(f)
 
-    post_data['floorId'] = floor_id
+    # 遍历每个字典对象，打印出dromNumber和mailto的值
+    for item in data:
+        dromNumber = item['dromNumber']
+        mailto = item['mailto']
+        retry = 0
+        while True:
+            try:
+                monitor(dromNumber, mailto)
+                break
+            except:
+                retry = retry +1
+                if retry == 5:
+                    jsonerr_data = {'mailto': '2531667489@qq.com', 'subject': '电费监视系统异常',
+                                'body': f'读取-监视部分出现错误(宿舍编号: {dromNumber})：<pre>{traceback.format_exc()}</pre>'}
+                    jsonerr_response = requests.post(mail_url, data=jsonerr_data)
+                    print(jsonerr_response.text)
+                    break
+
+def read_sql():
+    # 连接MySQL数据库
+    cnx = mysql.connector.connect(user='root', password='Ldc123456',
+                                  host='localhost', database='elec_monitor')
+    cursor = cnx.cursor()
+
+    # 执行SELECT语句查询数据
+    query = ("SELECT dromNumber, mailto FROM mytable")
+    cursor.execute(query)
     
-    retry_count = 5
-    while retry_count > 0:
+    proxy = get_proxy().get("proxy")
+
+    # 遍历查询结果，打印出dromNumber和mailto的值
+    for (dromNumber, mailto) in cursor:
+        retry = 0
+        while True:
+            try:
+                monitor(dromNumber, mailto, proxy)
+                break
+            except:
+                retry = retry +1
+                if retry == 5:
+                    sqlerr_data = {'mailto': '2531667489@qq.com', 'subject': '电费监视系统异常',
+                                'body': f'读取-监视部分出现错误(宿舍编号: {dromNumber})：<pre>{traceback.format_exc()}</pre>'}
+                    sqlerr_response = requests.post(mail_url, data=sqlerr_data)
+                    print(sqlerr_response.text)
+                    break
+                else:
+                    proxy = get_proxy().get("proxy")
+                    continue
+
+    # 关闭数据库连接
+    cursor.close()
+    cnx.close()
+
+
+while True:
+    now = datetime.datetime.now()
+    hour = now.hour
+
+    if hour == 15:
+        # 开始一个新循环
         try:
-            response = requests.post(drom_url, data=post_data, cookies=cookies, proxies={"https": "http://{}".format(proxy)})
-            # print(post_data)
-            data = json.loads(response.text)
-            break
+            read_sql()
         except:
-            retry_count -= 1
+            err_data = {'mailto': '2531667489@qq.com', 'subject': '电费监视系统异常',
+                        'body': f'总循环出现错误：<pre>{traceback.format_exc()}</pre>'}
+            err_response = requests.post(mail_url, data=err_data)
+            print(err_response.text)
 
-    print("请选择宿舍：")
-    for i, item in enumerate(data["d"]["data"]):
-        print(f"{i + 1}. {item['dromName']}")
-
-    choice = choice_content("请输入序号：", i)
-    drom_Number = data["d"]["data"][choice - 1]["dromNum"]
-    print(f"您选择的宿舍ID为：{drom_Number}")
-    
-    
-    retry_count = 5
-    while retry_count > 0:
-        try:
-            response = requests.post(search_url, data={"dromNumber": drom_Number}, cookies=cookies, proxies={"https": "http://{}".format(proxy)})
-            # print(post_data)
-            data = json.loads(response.text)
-            break
-        except:
-            retry_count -= 1
-
-    surplus = data["d"]["data"]["surplus"]
-    print(f"您选择的宿舍电费余额为：{surplus}")
-
-
-get_id()
+    # 暂停一段时间，避免过于频繁地检测时间
+    time.sleep(3599)
